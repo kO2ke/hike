@@ -8,26 +8,26 @@ export default class HaikuInterecter{
 
     public fetchAll(success: (result: Haiku[]) => void): void {
         setTimeout(() => {
-            success(this.stub)
+            success(this.stub.map((val)=>{
+                val.composer = val.composer.length == 0 ? "詠み人知らず" : val.composer
+                return val
+            }))
         }, 1000);   
     }
 
     public fetchWithSeason(season: number, success: (result: Haiku[]) => void): void {
         setTimeout(() => {
-            success(this.stub.filter(function(val){return val.season == season}))
+            success(this.stub.filter(function(val){return val.season == season}).map((val)=>{
+                val.composer = val.composer.length == 0 ? "詠み人知らず" : val.composer
+                return val
+            }))
         }, 1000); 
     }
 
-    public postHaiku(composer: string, first: string, second: string, third: string, season: number, success: (result: Haiku[]) => void): void{
-        const newHaiku: Haiku  = {composer: composer, 
-            first: first, 
-            second: second, 
-            third: third, 
-            season: season,
-            createdAt: Date.now.toString(),
-            id: this.stub.length + 1
-        }
-        this.stub.push(newHaiku)
+    public postHaiku(haiku: Haiku, success: (success: Haiku[]) => void): void{
+        haiku.createdAt = Date.now.toString()
+        haiku.id = this.stub.length + 1
+        this.stub.push(haiku)
         success(this.stub)
     }
 }

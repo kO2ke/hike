@@ -2,13 +2,15 @@
     <div class="p-3">
         <div v-bind:class="season" class="card">
             <div class="card-body">
-                <div class="poet">
-                    <div class="first">{{haiku.first}}</div>
-                    <div class="second">{{haiku.second}}</div>
-                    <div class="third">{{haiku.third}}</div>
-                </div>
-                <div class="composer float-left ml-2 mr-5 ">
-                    {{haiku.composer}}
+                <div class="row">
+                    <div class="poet">
+                        <div class="third">{{haiku.third}}</div>
+                        <div class="second">{{haiku.second}}</div>
+                        <div class="first">{{haiku.first}}</div>
+                    </div>
+                    <div class="composer">
+                        {{haiku.composer}}
+                    </div>
                 </div>
             </div>
         </div>
@@ -49,18 +51,26 @@ export default class HaikuView extends Vue {
 }
 
 .card-body{
-  -ms-writing-mode: tb-rl;
-  writing-mode: vertical-rl;
+  height: 250px;
   padding: 10px;
-  text-align: left;
 }
 
 .poet{
-    font-size: 18px;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    -ms-writing-mode: tb-lr;
+    writing-mode: vertical-lr;
+    font-size: 20px;
+    text-align: left;
 }
 
 .composer{
-    vertical-align: bottom;
-    margin-top: 200px;
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    -ms-writing-mode: tb-rl;
+    writing-mode: vertical-lr;
+    font-size: 15px;
 }
 </style>

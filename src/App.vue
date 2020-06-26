@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <div class="header my-2 text-center">
+    <div class="header py-2 text-center">
       Hike.com
     </div>
     <div id="nav">
@@ -12,10 +12,8 @@
 </template>
 
 <style>
-@import url("https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css");
 
 #app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
@@ -42,10 +40,12 @@
   top: 0;
   left:0;
   width:100vw;
+  background-color:rgb(255, 255, 255, 0.8);
+  z-index: 100;
 }
 
-#app{
-  font-family: 'Yu Mincho';
+body{
+  font-family: 'Yu Mincho'!important;
 }
 
 button{
@@ -54,18 +54,18 @@ button{
 }
 
 .spring{
-    background-color: rgb(255, 242, 245);
+    background-color: rgb(255, 242, 245)!important;
 }
 
 .summer{
-    background-color: #f1faff;
+    background-color: #f1faff!important;
 }
 
 .autumn{
-    background-color: rgb(255, 242, 231);
+    background-color: rgb(255, 242, 231)!important;
 }
 
 .winter{
-    background-color: rgb(209, 214, 221);
+    background-color: rgb(170, 190, 190)!important;
 }
 </style>
