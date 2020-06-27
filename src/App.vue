@@ -45,7 +45,7 @@
 }
 
 body{
-  font-family: 'Yu Mincho'!important;
+  font-family: 'Yu Mincho','YuMincho'!important;
 }
 
 button{

@@ -10,7 +10,7 @@
         <div class="row form-group mb-3">
             <label for="season" class="col-3 text-right">季節:</label>
             <div class="col-8">
-                <select id="season" class="custom-select" v-model="season">
+                <select id="season" class="custom-select" v-model="newHaiku.season">
                     <option v-for="seasonObj in seasons" 
                         :key="seasonObj.class" 
                         :value="seasonObj.value" 
@@ -41,7 +41,7 @@ import InputTypeTextView, {InputTypeText} from "@/components/inputItem/InputItem
     }
 })
 
-export default class HaikuComposeView extends Vue implements Haiku {
+export default class HaikuComposeView extends Vue {
 
     @Prop({type: Object as () => ComposeViewDelegate})
     delegate?: ComposeViewDelegate
@@ -51,32 +51,40 @@ export default class HaikuComposeView extends Vue implements Haiku {
 
     seasons = Const.seasons
 
-    composer = ""
-    first = ""
-    second = ""
-    third = ""
-    season = 0
-    id?: number
-    createdAt?: string
+    newHaiku: Haiku = HaikuComposeView.emptyHaiku()
 
+    private static emptyHaiku(): Haiku {
+        return {
+                    composer: "",
+                    first:     "",
+                    second:    "",
+                    third:     "",
+                    season:    0,
+                }
+    }
+    
     private getComposer(caller: InputTypeText): boolean{
-        this.composer = caller.text
+        this.newHaiku.composer = caller.text
         return true
     }
+
     private getFirst(caller: InputTypeText): boolean{
         if (caller.text.length == 0){
             caller.alert = "必須項目です"
             return false
         }
-        this.first = caller.text
+        caller.alert = ""
+        this.newHaiku.first = caller.text
         return true
     }
+
     private getSecond(caller: InputTypeText): boolean{
         if (caller.text.length == 0){
             caller.alert = "必須項目です"
             return false
         }
-        this.second = caller.text
+        caller.alert = ""
+        this.newHaiku.second = caller.text
         return true
     }
     private getThird(caller: InputTypeText): boolean{
@@ -84,43 +92,57 @@ export default class HaikuComposeView extends Vue implements Haiku {
             caller.alert = "必須項目です"
             return false
         }
-        this.third = caller.text
+        caller.alert = ""
+        this.newHaiku.third = caller.text
         return true
     }
 
-    private textForms: InputTypeText[] = [
-        {
+    private composer: InputTypeText = 
+    {
             title: "詠み人", 
             id:"composer", 
             text:"", 
             placeholder: "詠み人知らず", 
             alert: "", 
             getValue:this.getComposer
-        },
-        {
+    }
+
+    private first: InputTypeText = 
+    {
             title: "五",
             id:"first",
             text:"",
             placeholder: "古池や",
             alert: "", 
             getValue: this.getFirst
-        },
-        {
+    }
+
+    private second: InputTypeText = 
+    {
             title: "七",
             id:"second",
             text:"",
             placeholder: "蛙飛び込む",
             alert: "",
             getValue: this.getSecond
-        },
-        {
+    }
+
+    private third: InputTypeText = 
+    {
             title: "五",
             id:"third",
             text:"",
             placeholder: "水の音",
             alert: "",
             getValue: this.getThird
-        }
+    }
+
+    private textForms: InputTypeText[] = 
+    [
+        this.composer,
+        this.first,
+        this.second,
+        this.third
     ]
 
     private composeEnd() {
@@ -134,13 +156,9 @@ export default class HaikuComposeView extends Vue implements Haiku {
         if(!validate){
             return
         }
-        console.log(this.first)
-        this.delegate?.composeEnd(this)
+        this.delegate?.composeEnd(this.newHaiku)
+        this.newHaiku = HaikuComposeView.emptyHaiku()
         this.$bvModal.hide('composeModal')
-    }
-
-    private validate() {
-        this.first 
     }
 }
 

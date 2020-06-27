@@ -5,7 +5,7 @@
             <b-button @click="update"><b-icon icon="arrow-repeat"></b-icon></b-button>       
             <div class="container-fluid">
                 <div class="row justify-content-center">
-                    <HaikuView class="col-7 col-sm-4 col-md-3 col-lg-2" v-for="haiku in viewList" v-bind:key="haiku.id" v-bind:haiku="haiku"></HaikuView>
+                    <HaikuView class="col-7 col-sm-4 col-md-3 col-lg-2" v-for="haiku in viewList" v-bind:key="`haiku-${haiku.id}`" v-bind:haiku="haiku"></HaikuView>
                 </div>
             </div>
         </div>
@@ -39,13 +39,21 @@ export default class HaikuListView extends Vue implements ComposeViewDelegate{
   interecter: HaikuInterecter= new HaikuInterecter()
   isLoading = false
 
-  public update(){
+  mounted(){
+      this.update()
+  }
+
+  private update(){
       this.isLoading = true
-      this.interecter.fetchAll((haikuList)=>{
-          this.viewList = haikuList
-          console.log(this.viewList)
-          this.isLoading = false
-      })
+      this.interecter.fetchAll()
+        .then((haikuList)=>{
+            this.viewList = haikuList
+            console.log(this.viewList)
+        }).catch((err) => {
+            alert(err)
+        }).finally(()=>{
+            this.isLoading = false
+        })
   }
 
   private compose(){
@@ -54,8 +62,7 @@ export default class HaikuListView extends Vue implements ComposeViewDelegate{
 
   public composeEnd(newHaiku: Haiku): void {
      this.interecter.postHaiku(newHaiku, (haikus)=>{
-         this.viewList = haikus
-         this.isLoading = false
+         this.update()
      })
       return
   }
