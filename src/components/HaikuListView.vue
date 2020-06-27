@@ -2,6 +2,7 @@
     <div>
         <b-spinner variant="secondary" v-if="isLoading">Loading....</b-spinner>
         <div v-if="!isLoading">
+            <b-alert v-if="alert.length>0" show>{{alert}}</b-alert>
             <b-button @click="update"><b-icon icon="arrow-repeat"></b-icon></b-button>       
             <div class="container-fluid">
                 <div class="row justify-content-center">
@@ -10,7 +11,7 @@
             </div>
         </div>
 
-        <b-button class="compose-btn" @click="compose"><b-icon icon="pencil"></b-icon>ここで一句</b-button>
+        <b-button class="compose-btn" @click="compose"><b-icon icon="pencil"></b-icon><span class="d-none d-sm-inline">ここで一句</span></b-button>
 
         <HaikuComposeView :delegate="this"></HaikuComposeView>
     </div>
@@ -22,7 +23,7 @@ import HaikuInterecter from "@/components/repogitory/HaikuInterecter";
 import {Haiku} from "@/components/repogitory/Haiku";
 import HaikuView from "@/components/HaikuView.vue";
 import HaikuComposeView from "@/components/HaikuComposeView.vue";
-import {ComposeViewDelegate} from "@/components/HaikuComposeView.vue";
+import {ComposeViewDelegate} from "@/components/HaikuComposeView.vue"
 
 @Component({
     components: {
@@ -38,6 +39,7 @@ export default class HaikuListView extends Vue implements ComposeViewDelegate{
   viewList: Haiku[] = []
   interecter: HaikuInterecter= new HaikuInterecter()
   isLoading = false
+  alert = ""
 
   mounted(){
       this.update()
@@ -48,9 +50,10 @@ export default class HaikuListView extends Vue implements ComposeViewDelegate{
       this.interecter.fetchAll()
         .then((haikuList)=>{
             this.viewList = haikuList
+            this.alert=""
             console.log(this.viewList)
         }).catch((err) => {
-            alert(err)
+            this.alert = err
         }).finally(()=>{
             this.isLoading = false
         })
@@ -74,7 +77,12 @@ export default class HaikuListView extends Vue implements ComposeViewDelegate{
 .compose-btn{
     position: fixed;
     top: 10px;
-    right: max(50vw - 400px, 100px); 
+    right: max(50vw - 400px, 20px); 
     z-index: 101;
+}
+
+.mobile .compose-btn{
+    top:auto;
+    bottom: 10px;
 }
 </style>
