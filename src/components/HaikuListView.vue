@@ -47,16 +47,10 @@ export default class HaikuListView extends Vue implements ComposeViewDelegate{
 
   private update(){
       this.isLoading = true
-      this.interecter.fetchAll()
-        .then((haikuList)=>{
-            this.viewList = haikuList
-            this.alert=""
-            console.log(this.viewList)
-        }).catch((err) => {
-            this.alert = err
-        }).finally(()=>{
-            this.isLoading = false
-        })
+      this.interecter.realtimeFetchAll(newHaikus => {
+          this.isLoading = false
+          this.viewList = newHaikus
+      })
   }
 
   private compose(){
@@ -64,9 +58,12 @@ export default class HaikuListView extends Vue implements ComposeViewDelegate{
   }
 
   public composeEnd(newHaiku: Haiku): void {
-     this.interecter.postHaiku(newHaiku, (haikus)=>{
-         this.update()
-     })
+     this.interecter.postHaiku(newHaiku)
+        .then( (docRef) => {
+            console.log(docRef)
+        }).catch((error) => {
+            this.alert = error as string
+        })
       return
   }
 }

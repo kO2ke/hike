@@ -1,30 +1,49 @@
 import {Haiku} from "./Haiku"
 import moment from 'moment';
+import firebase from 'firebase'
+import {firebaseConfig} from "@/firebaseConfig"
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+firebase.analytics();
+
+// Initialize Firebase
+firebase.analytics();
+
+const db = firebase.firestore
 
 export default class HaikuInterecter{
     public stub: Haiku[]
     constructor(){
-        this.stub = [{composer:"近藤さちこ",first:"あした行く",second:"方より聞こゆ",third:"春の雷",season:0,createdAt:"2020-01-01",id:1},{composer:"近藤さちこ",first:"あした行く",second:"方より聞こゆ",third:"夏の雷",season:1,createdAt:"2020-01-02",id:2},{composer:"近藤さちこ",first:"あした行く",second:"方より聞こゆ",third:"秋の雷",season:2,createdAt:"2020-01-03",id:3},{composer:"近藤さちこ",first:"あした行く",second:"方より聞こゆ",third:"冬の雷",season:3,createdAt:"2020-01-04",id:4}]
+        this.stub = [{composer:"近藤さちこ",first:"あした行く",second:"方より聞こゆ",third:"春の雷",season:"spring",createdAt:db.Timestamp.fromDate(new Date("2020-01-01")),id:"a"}]
     }
 
-    public fetchAll(): Promise<Haiku[]> {
-        return this.stubFetchAll()
+    public fetchAll(): Promise<firebase.firestore.QuerySnapshot> {
+        return db().collection("haikus").get()
     }
 
-    public fetchWithSeason(season: number): Promise<Haiku[]> {
+    public realtimeFetchAll(onFetchDoc: (haikus: Haiku[]) => void){
+        db().collection("haikus").onSnapshot(querySnapshot => {
+            const newHaikus: Haiku[] = []
+            querySnapshot.forEach(doc => {
+                newHaikus.push(doc.data() as Haiku)
+            })
+            onFetchDoc(newHaikus)
+        })
+    }
+
+    public fetchWithSeason(season: string): Promise<Haiku[]> {
         return this.stubFetchWithSeason(season) 
     }
 
-    public postHaiku(haiku: Haiku, success: (success: Haiku[]) => void): void{
-        haiku.createdAt = moment(new Date()).format(("YYYY-MM-DD HH:mm"))
-        haiku.id = this.stub.length + 1
-        this.stub.push(haiku)
-        console.log(haiku.createdAt)
-        success(this.stub)
+    public postHaiku(haiku: Haiku): Promise<void>{
+        haiku.createdAt = db.FieldValue.serverTimestamp()
+        const newHaikuRef = db().collection("haikus").doc();
+        haiku.id = newHaikuRef.id
+        return newHaikuRef.set(haiku)
     }
 
     private stubFetchAll(): Promise<Haiku[]> {
-        
         return new Promise((resolve, reject) => {
             setTimeout(() => {
 
@@ -46,7 +65,7 @@ export default class HaikuInterecter{
         })
     }
 
-    private stubFetchWithSeason(season: number): Promise<Haiku[]> {
+    private stubFetchWithSeason(season: string): Promise<Haiku[]> {
         return new Promise((resolve) => {
         setTimeout(() => {
 

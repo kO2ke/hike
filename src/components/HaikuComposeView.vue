@@ -13,7 +13,7 @@
                 <select id="season" class="custom-select" v-model="newHaiku.season">
                     <option v-for="seasonObj in seasons" 
                         :key="seasonObj.class" 
-                        :value="seasonObj.value" 
+                        :value="seasonObj.class" 
                         :class="seasonObj.class">
                     {{seasonObj.name}}
                     </option>
@@ -58,8 +58,7 @@ export default class HaikuComposeView extends Vue {
                     composer: "",
                     first:     "",
                     second:    "",
-                    third:     "",
-                    season:    0,
+                    third:     ""
                 }
     }
     

@@ -1,6 +1,6 @@
 <template>
     <div class="p-3">
-        <div v-bind:class="season" class="card">
+        <div v-bind:class="haiku.season" class="card">
             <div class="card-body">
                 <div class="row">
                     <div class="poet">
@@ -26,21 +26,6 @@ export default class HaikuView extends Vue {
 
   @Prop({type: Object as () => Haiku})
   haiku!: Haiku
-
-  private get season() {
-      switch (this.haiku.season) {
-        case 0:
-            return "spring"
-        case 1:
-            return "summer"
-        case 2:
-            return "autumn"
-        case 3:
-            return "winter"
-        default:
-            return "spring" 
-      }
-  }
 }
 </script>
 

@@ -1,7 +1,9 @@
 <template>
   <div id="app">
-    <div class="header py-2 text-center">
-      Hike.com
+    <div class="header py-2 text-center border-bottom">
+      <span>Hike.com</span>
+      <b-icon icon="door-closed" class="rounded-circle right-menu" v-if="!isSignin"></b-icon>
+      <b-icon icon="person-circle" class="right-menu" v-if="isSignin"></b-icon>
     </div>
     <div id="nav">
       <router-link to="/">Home</router-link> |
@@ -10,6 +12,19 @@
     <router-view/>
   </div>
 </template>
+
+<script>
+
+import firebase from 'firebase'
+
+export default {
+  methods: {
+    isSignin: function() {
+      return firebase.auth().currentUser
+    }
+  }
+}
+</script>
 
 <style>
 
@@ -67,5 +82,12 @@ button{
 
 .winter{
     background-color: rgb(170, 190, 190)!important;
+}
+
+.right-menu{
+    position: absolute;
+    top: 10px;
+    right: 20px; 
+    z-index: 101;
 }
 </style>

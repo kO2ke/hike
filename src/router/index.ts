@@ -1,9 +1,21 @@
 import Vue from 'vue'
 import VueRouter, { RouteConfig } from 'vue-router'
-import Home from '../views/Home.vue'
+
+import firebase from "firebase"
+
 import 'bootstrap/dist/css/bootstrap.css'
 import 'bootstrap-vue/dist/bootstrap-vue.css'
 import { BootstrapVue, IconsPlugin } from 'bootstrap-vue'
+
+import Home from '../views/Home.vue'
+import Signin from '../views/Signin.vue'
+import Signup from '../views/Signup.vue'
+
+
+// Install BootstrapVue
+Vue.use(BootstrapVue)
+// Optionally install the BootstrapVue icon components plugin
+Vue.use(IconsPlugin)
 
 Vue.use(VueRouter)
 
@@ -12,6 +24,18 @@ Vue.use(VueRouter)
     path: '/',
     name: 'Home',
     component: Home
+  },
+  {
+    path: '/signin',
+    name: 'Signin',
+    component: Signin,
+    meta: { requiresNotAuth: true }
+  },
+  {
+    path: '/signup',
+    name: 'Signup',
+    component: Signup,
+    meta: { requiresNotAuth: true }
   },
   {
     path: '/about',
@@ -29,9 +53,20 @@ const router = new VueRouter({
   routes
 })
 
-// Install BootstrapVue
-Vue.use(BootstrapVue)
-// Optionally install the BootstrapVue icon components plugin
-Vue.use(IconsPlugin)
+router.beforeEach((to, from, next) => {
+  const requiresNotAuth = to.matched.some(record => record.meta.requiresNotAuth)
+  const isNotLogin = firebase.auth().currentUser
+  if (requiresNotAuth) {
+    if (!isNotLogin) {
+      next({
+        path: '/',
+      })
+    } else {
+      next()
+    }
+  } else {
+    next()
+  }
+})
 
 export default router
