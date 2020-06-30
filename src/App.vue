@@ -2,8 +2,16 @@
   <div id="app">
     <div class="header py-2 text-center border-bottom">
       <span>Hike.com</span>
-      <b-icon icon="door-closed" class="rounded-circle right-menu" v-if="!isSignin"></b-icon>
-      <b-icon icon="person-circle" class="right-menu" v-if="isSignin"></b-icon>
+      <b-button v-if="!auth.currentUser" href="/signin"  class="right-menu">
+        <b-icon icon="door-closed" class="rounded-circle"></b-icon>
+      </b-button>
+      <b-dropdown v-if="auth.currentUser" class="right-menu" no-caret>
+        <template v-slot:button-content>
+          <b-icon icon="person-circle"></b-icon>
+        </template>
+        <b-dropdown-item >{{auth.currentUser.displayName}}</b-dropdown-item>
+        <b-dropdown-item ><b-button @click="signout">SignOut</b-button></b-dropdown-item>
+      </b-dropdown>
     </div>
     <div id="nav">
       <router-link to="/">Home</router-link> |
@@ -16,12 +24,26 @@
 <script>
 
 import firebase from 'firebase'
+import router from '@/router'
+import Component from 'vue-class-component'
+import {Auth} from '@/user/auth'
 
 export default {
-  methods: {
-    isSignin: function() {
-      return firebase.auth().currentUser
+  name: "App",
+
+  data: function () {
+    return {
+      auth = Auth.getInstance()
     }
+  },
+
+  methods: {
+    signout: function() {
+      console.log(this.currentUser)
+      auth.signOut().then(()=>{
+        this.$router.push("/signin")
+      })
+    },
   }
 }
 </script>

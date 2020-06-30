@@ -55,9 +55,9 @@ const router = new VueRouter({
 
 router.beforeEach((to, from, next) => {
   const requiresNotAuth = to.matched.some(record => record.meta.requiresNotAuth)
-  const isNotLogin = firebase.auth().currentUser
+  const isLogin = firebase.auth().currentUser
   if (requiresNotAuth) {
-    if (!isNotLogin) {
+    if (isLogin) {
       next({
         path: '/',
       })

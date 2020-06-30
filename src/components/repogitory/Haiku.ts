@@ -7,5 +7,19 @@ export interface Haiku {
     third:        string;
     season?:       string;
     createdAt?:    firebase.firestore.FieldValue;
-    id?:           string;
+    likeCount: number;
+    likedUser: {[id:string]: boolean};
+    id:           string;
+}
+
+export const emptyHaiku = () =>{
+    return {
+        composer: "",
+        id: "",
+        first:     "",
+        second:    "",
+        third:     "",
+        likeCount: 0,
+        likedUser: {}
+    }
 }

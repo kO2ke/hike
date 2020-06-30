@@ -32,7 +32,7 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import {Const} from '@/constant/Constant.ts'
-import {Haiku} from "@/components/repogitory/Haiku"
+import {Haiku, emptyHaiku} from "@/components/repogitory/Haiku"
 import InputTypeTextView, {InputTypeText} from "@/components/inputItem/InputItem.vue"
 
 @Component({
@@ -51,16 +51,7 @@ export default class HaikuComposeView extends Vue {
 
     seasons = Const.seasons
 
-    newHaiku: Haiku = HaikuComposeView.emptyHaiku()
-
-    private static emptyHaiku(): Haiku {
-        return {
-                    composer: "",
-                    first:     "",
-                    second:    "",
-                    third:     ""
-                }
-    }
+    newHaiku: Haiku = emptyHaiku()
     
     private getComposer(caller: InputTypeText): boolean{
         this.newHaiku.composer = caller.text
@@ -156,7 +147,7 @@ export default class HaikuComposeView extends Vue {
             return
         }
         this.delegate?.composeEnd(this.newHaiku)
-        this.newHaiku = HaikuComposeView.emptyHaiku()
+        this.newHaiku = emptyHaiku()
         this.$bvModal.hide('composeModal')
     }
 }

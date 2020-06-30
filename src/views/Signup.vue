@@ -16,15 +16,23 @@
 
 import firebase from 'firebase'
 import router from '../router'
-import { Component, Vue} from 'vue-property-decorator';
+import {Vue, Component} from 'vue-property-decorator';
 
+@Component
 export default class Signin extends Vue{
-  username = ''
-  password = ''
+  username = ""
+  password = ""
 
-  private SignupWithGoogle() {
+  mounted(){
+    firebase.auth().onAuthStateChanged((user) => {
+      if (user) {
+          this.$router.push("/")
+      }
+    })
+  }
+
+  private signupWithGoogle() {
       const provider = new firebase.auth.GoogleAuthProvider()
-
       firebase.auth().signInWithPopup(provider).then(result => {
         router.push('/')
       }).catch(error => {
