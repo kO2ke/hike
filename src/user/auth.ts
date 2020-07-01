@@ -12,12 +12,19 @@ export class Auth{
         return this._instance;
     }
 
-    public currentUser:firebase.User|null = null
+    public currentUser: firebase.User|null = null
 
     constructor(caller: Function){
         if (caller == Auth.getInstance){
             firebase.auth().onAuthStateChanged((user) => {
                 this.currentUser = user
+                if(user){
+                    firebase.firestore().collection("users").doc(user.uid).set({id: user.uid}, {merge: true})
+                        .then(() => {
+                            console.log(user.uid)
+                        })
+                        .catch(err => {console.log(err)})
+                }
             });
         }
         else if (Auth._instance)
@@ -26,7 +33,7 @@ export class Auth{
             throw new Error("コンストラクタの引数が不正な為エラー。");
     }
     
-    public signout() {
-        firebase.auth().signOut()
+    public signOut() {
+        return firebase.auth().signOut()
     }
 }

@@ -1,20 +1,16 @@
 <template>
-    <div class="p-3">
-        <div v-bind:class="haiku.season" class="card">
-            <div class="card-body">
-                <div class="row">
-                    <div class="like">
-                        <b-icon :icon="isUserLiked ? 'star-fill' : 'star'"></b-icon><br>
-                        {{haiku.likeCount}}
-                    </div>
-                    <div class="poet">
-                        <div class="third">{{haiku.third}}</div>
-                        <div class="second">{{haiku.second}}</div>
-                        <div class="first">{{haiku.first}}</div>
-                    </div>
-                    <div class="composer">
-                        {{haiku.composer}}
-                    </div>
+    <div class="py-3">
+        <div v-bind:class="haiku.season" class="card shadow">
+            <div class="like rounded-circle" :class="[isUserLiked ? 'liked' : '']" @click="toggleLike">誉</div>
+            <div class="likeCount">{{displayLikeNum}}</div>
+            <div class="card-body display-flex">
+                <div class="poet">
+                    <div class="third">{{haiku.third}}</div>
+                    <div class="second">{{haiku.second}}</div>
+                    <div class="first">{{haiku.first}}</div>
+                </div>
+                <div class="composer">
+                    {{haiku.composer.length > 0 ? haiku.composer : "読み人知らず"}}
                 </div>
             </div>
         </div>
@@ -25,6 +21,9 @@
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import {Haiku} from "@/components/repogitory/Haiku"
 import HaikuInterecter from "@/components/repogitory/HaikuInterecter";
+import {Auth} from '@/user/auth'
+import {numbersToKanji} from '@/constant/Constant'
+
 
 @Component
 export default class HaikuView extends Vue {
@@ -32,19 +31,41 @@ export default class HaikuView extends Vue {
   @Prop({type: Object as () => Haiku})
   haiku!: Haiku
 
-  @Prop()
-  userId?: string
+  auth = Auth.getInstance()
 
   interecter = HaikuInterecter.getInstance()
 
   mounted() {
       this.interecter.watchHaiku(this.haiku.id, (haikuStatus) => {
           this.haiku.likeCount = haikuStatus.likeCount
+          this.haiku.likedUser = haikuStatus.likedUser
       })
   }
 
-  private get isUserliked(){
-      
+  private get displayLikeNum() {
+      return numbersToKanji(this.haiku.likeCount)
+  }
+
+  private toggleLike(){
+      const userId = this.auth.currentUser?.uid
+
+      if(!userId){
+          return
+      }
+
+      if (this.isUserLiked) {
+          this.interecter.cancelLikeToHaiku(userId, this.haiku.id)
+      }else{
+          this.interecter.likeToHaiku(userId, this.haiku.id)
+      }
+  }
+
+  private get isUserLiked() {
+      if (this.auth.currentUser != null){
+          return this.haiku.likedUser[this.auth.currentUser.uid] ?? false
+      }else{
+          return false
+      }
   }
 }
 </script>
@@ -52,12 +73,47 @@ export default class HaikuView extends Vue {
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
 .card{
-    padding: 10px;
+    overflow: hidden;
+    height: 250px;
+    width: 164px;
+    margin: auto;
+    background-color: rgb(255, 255, 255, 0.7);
 }
 
-.card-body{
-  height: 250px;
-  padding: 10px;
+.backText {
+    opacity: 0.05;
+    -ms-writing-mode: tb-rl;
+    writing-mode: vertical-rl;
+}
+
+.like{
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    padding-top: 5.5px;
+    height: 40px;
+    width: 40px;
+    color: rgb(255, 255, 255);
+    background: rgba(173, 172, 172, 0.7);
+    box-sizing: border-box;
+    transition: 0.5s;
+}
+
+.like.liked{
+    border:2px solid rgb(235, 160, 160);
+}
+
+.like:hover{
+    background: rgba(100, 100, 100, 0.7);
+}
+
+.likeCount{
+    position: absolute;
+    -ms-writing-mode: tb-rl;
+    writing-mode: vertical-rl;
+    top: 60px;
+    left: 18px;
+    color: rgba(138, 136, 136, 0.7);
 }
 
 .poet{
@@ -79,9 +135,12 @@ export default class HaikuView extends Vue {
     font-size: 15px;
 }
 
-.like{
-    position: absolute;
-    top: 10px;
-    left: 10px;
+
+.star-fill{
+    transition: 0.5s;;
+}
+
+.star-fill.notLiked{
+    opacity: 0;
 }
 </style>

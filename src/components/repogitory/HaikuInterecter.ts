@@ -1,13 +1,22 @@
 import {Haiku, emptyHaiku} from "./Haiku"
 import moment from 'moment';
 import firebase from 'firebase'
+import {Auth} from '@/user/auth'
 
 const db = firebase.firestore
+
+export interface FetchResult
+{
+    haikus: Haiku[];
+    nextQuery: Promise<FetchResult> | null;
+}
 
 //::This is singleton class
 export default class HaikuInterecter{
 
     private static _instance: HaikuInterecter;
+
+    private auth = Auth.getInstance()
 
     public static getInstance(): HaikuInterecter
     {
@@ -26,19 +35,49 @@ export default class HaikuInterecter{
             throw new Error("コンストラクタの引数が不正な為エラー。");
     }
 
-    public fetchAll(): Promise<Haiku[]> {
+    public fetchHaiku(span: number, startAfter: firebase.firestore.DocumentData | null = null): Promise<FetchResult> {
+        if(startAfter){
+            return new Promise((resolve, reject) => {
+                if(span <= 0){
+                    reject(new Error("range is must be positive"))
+                }
+                db().collection("haikus").orderBy("createdAt", "desc").startAfter(startAfter).limit(span).get()
+                    .then((snapshot) => {
+                        const newHaikus: Haiku[] = []
+                        const lastDoc = snapshot.docs[snapshot.docs.length - 1]
+                        snapshot.forEach(doc => {
+                            newHaikus.push(doc.data() as Haiku)
+                        })
+                        //次がなければnextQueryはnullをかえす
+                        const nextQuery = snapshot.docs.length < span ? null : this.fetchHaiku(span, lastDoc)
+                       resolve({haikus:newHaikus, nextQuery: nextQuery})
+                    }).catch((err)=>{
+                        reject(err)
+                    })
+            }) 
+        }
+
+        //先頭から
         return new Promise((resolve, reject) => {
-            db().collection("haikus").get()
+            if(span <= 0){
+                reject(new Error("range is must be positive"))
+            }
+            db().collection("haikus").orderBy("createdAt", "desc").limit(span).get()
                 .then((snapshot) => {
                     const newHaikus: Haiku[] = []
+                    const lastDoc = snapshot.docs[snapshot.docs.length - 1]
                     snapshot.forEach(doc => {
                         newHaikus.push(doc.data() as Haiku)
                     })
-                   resolve(newHaikus)
+                    //次がなければnextQueryはnullをかえす
+                    const nextQuery = snapshot.docs.length < span ? null : this.fetchHaiku(span, lastDoc)
+                    resolve({haikus:newHaikus, nextQuery: nextQuery})
                 }).catch((err)=>{
                     reject(err)
                 })
         })
+
+
     }
 
     public watchHaiku(id: string, onFetchDoc: (haiku: Haiku) => void) {
@@ -49,9 +88,37 @@ export default class HaikuInterecter{
         })
     }
 
-    public likeToHaiku(id: string){
+    public likeToHaiku(userId: string, haikuId: string){
         const batch = db().batch()
+        const likedHaikuRef = db().collection("haikus").doc(haikuId)
+        const likedUserRef  = db().collection("users").doc(userId)
+
+        //俳句のいいね数といいねした人リストを更新
+        const likedUserPath = "likedUser."+userId
+        batch.update(likedHaikuRef, {[likedUserPath]: true, likeCount: db.FieldValue.increment(1)})
+
+        //ユーザーのいいねリストを追加
+        batch.set(likedUserRef.collection("likedHaiku").doc(haikuId), {"id": haikuId, "haikuRef": likedHaikuRef, createTime: db.FieldValue.serverTimestamp()})
+
+        batch.commit()
     }
+
+    public cancelLikeToHaiku(userId: string, haikuId: string){
+        const batch = db().batch()
+        const likedHaikuRef = db().collection("haikus").doc(haikuId)
+        const likedUserRef  = db().collection("users").doc(userId)
+
+        //俳句のいいね数といいねした人リストを更新
+        const likedUserPath = "likedUser."+userId
+        batch.update(likedHaikuRef, {[likedUserPath]: db.FieldValue.delete(), likeCount: db.FieldValue.increment(-1)})
+
+        //ユーザーのいいねリストを削除
+        batch.delete(likedUserRef.collection("likedHaiku").doc(haikuId))
+
+        batch.commit()
+    }
+
+
 
     public realtimeFetchAll(onFetchDoc: (haikus: Haiku[]) => void){
         db().collection("haikus").onSnapshot(querySnapshot => {

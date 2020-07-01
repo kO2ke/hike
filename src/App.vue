@@ -33,14 +33,14 @@ export default {
 
   data: function () {
     return {
-      auth = Auth.getInstance()
+      auth: Auth.getInstance()
     }
   },
 
   methods: {
     signout: function() {
-      console.log(this.currentUser)
-      auth.signOut().then(()=>{
+      console.log(this.auth.currentUser)
+      this.auth.signOut().then(()=>{
         this.$router.push("/signin")
       })
     },
@@ -83,6 +83,9 @@ export default {
 
 body{
   font-family: 'Yu Mincho','YuMincho'!important;
+  background-image: url("~@/assets/background2.jpg");
+  background-color:rgba(255,255,255,0.8);
+  background-blend-mode:lighten;
 }
 
 button{
@@ -91,19 +94,19 @@ button{
 }
 
 .spring{
-    background-color: rgb(255, 242, 245)!important;
+    background-color: rgba(253, 237, 250, 0.7)!important;
 }
 
 .summer{
-    background-color: #f1faff!important;
+    background-color: rgba(210, 230, 230, 0.7)!important;
 }
 
 .autumn{
-    background-color: rgb(255, 242, 231)!important;
+    background-color: rgba(202, 181, 163, 0.7)!important;
 }
 
 .winter{
-    background-color: rgb(170, 190, 190)!important;
+    background-color: rgba(143, 161, 160, 0.7)!important;
 }
 
 .right-menu{
@@ -112,4 +115,5 @@ button{
     right: 20px; 
     z-index: 101;
 }
+
 </style>

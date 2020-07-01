@@ -1,15 +1,22 @@
 <template>
-    <div>
-        <label :for="delegate.id" class="col-3 text-right col-form-label">
-            {{delegate.title}}:
-        </label>
-        <div class="col-8">
-            <input :id="delegate.id" :placeholder="delegate.placeholder" v-model="delegate.text" class="form-control" type="text" size="10">
-        </div>
-        <div class="col-12 text-right" v-if="delegate.alert.length > 0 && delegate.text.length == 0">
-            <b-badge class="mr-5" variant="danger">{{delegate.alert}}</b-badge>
-        </div>
-    </div>
+    <div role="group">
+    <label for="input-live">{{delegate.title}}</label>
+    <b-form-input
+      :id="delegate.id"
+      v-model="delegate.text"
+      :state="state"
+      aria-describedby="input-live-help input-live-feedback"
+      :placeholder="delegate.placeholder"
+      trim
+    ></b-form-input>
+
+    <!-- This will only be shown if the preceding input has an invalid state -->
+    <b-form-invalid-feedback id="input-live-feedback">
+      {{delegate.alert}}
+    </b-form-invalid-feedback>
+
+    <!-- This is a form text block (formerly known as help block) -->
+  </div>
 </template>
 
 <script lang="ts">
@@ -21,7 +28,8 @@ export interface InputTypeText{
     text: string;
     placeholder: string;
     alert: string;
-    getValue: (caller: InputTypeText) => boolean;
+    getValue(caller: InputTypeText): void;
+    validate(): boolean;
 }
 
 
@@ -37,9 +45,8 @@ export default class InputTypeTextView extends Vue{
     @Prop({type: Object as () => InputTypeText})
     delegate?: InputTypeText
 
-    private get isAlert(): boolean {
-        if (this.delegate == null){return false}
-        return this.delegate?.alert.length > 0
+    private get state(): boolean {
+        return this.delegate?.validate() ?? true
     }
 }
 </script>>

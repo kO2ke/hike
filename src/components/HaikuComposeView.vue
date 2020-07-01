@@ -3,7 +3,7 @@
       <template v-slot:modal-title>
           ここで一句
       </template>
-      <div class="d-block">
+      <div class="d-block p-3">
         <form>
         <InputTypeTextView v-for="form in textForms" :key="form.id" :delegate="form" class="row form-group mb-3">
         </InputTypeTextView>
@@ -24,7 +24,7 @@
       </div>
       <template v-slot:modal-footer>
         <b-button type="button" @click="$bvModal.hide('composeModal')" variant="secondary" >閉じる</b-button>
-        <b-button type="button" variant="primary" @click="composeEnd">詠む</b-button>
+        <b-button type="button" :disabled="!allValidate" variant="primary" @click="composeEnd">詠む</b-button>
       </template>
   </b-modal>
 </template>
@@ -59,30 +59,15 @@ export default class HaikuComposeView extends Vue {
     }
 
     private getFirst(caller: InputTypeText): boolean{
-        if (caller.text.length == 0){
-            caller.alert = "必須項目です"
-            return false
-        }
-        caller.alert = ""
         this.newHaiku.first = caller.text
         return true
     }
 
     private getSecond(caller: InputTypeText): boolean{
-        if (caller.text.length == 0){
-            caller.alert = "必須項目です"
-            return false
-        }
-        caller.alert = ""
         this.newHaiku.second = caller.text
         return true
     }
     private getThird(caller: InputTypeText): boolean{
-        if (caller.text.length == 0){
-            caller.alert = "必須項目です"
-            return false
-        }
-        caller.alert = ""
         this.newHaiku.third = caller.text
         return true
     }
@@ -94,7 +79,10 @@ export default class HaikuComposeView extends Vue {
             text:"", 
             placeholder: "詠み人知らず", 
             alert: "", 
-            getValue:this.getComposer
+            getValue:this.getComposer,
+            validate(): boolean{
+                return true
+            }
     }
 
     private first: InputTypeText = 
@@ -103,8 +91,11 @@ export default class HaikuComposeView extends Vue {
             id:"first",
             text:"",
             placeholder: "古池や",
-            alert: "", 
-            getValue: this.getFirst
+            alert: "10文字以内で入力してください", 
+            getValue: this.getFirst,
+            validate(): boolean{
+                return this.text.length > 0 && this.text.length <=10
+            }
     }
 
     private second: InputTypeText = 
@@ -113,8 +104,11 @@ export default class HaikuComposeView extends Vue {
             id:"second",
             text:"",
             placeholder: "蛙飛び込む",
-            alert: "",
-            getValue: this.getSecond
+            alert: "11文字以内で入力してください",
+            getValue: this.getSecond,
+            validate(): boolean{
+                return this.text.length > 0 && this.text.length <=14
+            }
     }
 
     private third: InputTypeText = 
@@ -123,8 +117,11 @@ export default class HaikuComposeView extends Vue {
             id:"third",
             text:"",
             placeholder: "水の音",
-            alert: "",
-            getValue: this.getThird
+            alert: "10文字以内で入力してください",
+            getValue: this.getThird,
+            validate(): boolean{
+                return this.text.length > 0 && this.text.length <=10
+            }
     }
 
     private textForms: InputTypeText[] = 
@@ -136,19 +133,30 @@ export default class HaikuComposeView extends Vue {
     ]
 
     private composeEnd() {
+        if(!this.allValidate){return}
+
+        this.textForms.forEach(form => {
+            form.getValue(form)
+        });
+
+        this.textForms.forEach(form => {
+            form.text = ""
+        })
+
+        this.delegate?.composeEnd(this.newHaiku)
+        this.newHaiku = emptyHaiku()
+        this.$bvModal.hide('composeModal')
+    }
+
+    private get allValidate(){
         let validate = true
         this.textForms.forEach(form => {
-            if(!form.getValue(form)){
+            if(!form.validate()){
                 console.log(form.alert)
                 validate = false
             }
         });
-        if(!validate){
-            return
-        }
-        this.delegate?.composeEnd(this.newHaiku)
-        this.newHaiku = emptyHaiku()
-        this.$bvModal.hide('composeModal')
+        return validate
     }
 }
 

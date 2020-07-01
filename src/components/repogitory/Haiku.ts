@@ -8,7 +8,7 @@ export interface Haiku {
     season?:       string;
     createdAt?:    firebase.firestore.FieldValue;
     likeCount: number;
-    likedUser: {[id:string]: boolean};
+    likedUser: {[id: string]: boolean};
     id:           string;
 }
 
