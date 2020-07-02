@@ -5,7 +5,7 @@ export interface Haiku {
     first:        string;
     second:       string;
     third:        string;
-    season?:       string;
+    season:       string;
     createdAt?:    firebase.firestore.FieldValue;
     likeCount: number;
     likedUser: {[id: string]: boolean};
@@ -19,6 +19,7 @@ export const emptyHaiku = () =>{
         first:     "",
         second:    "",
         third:     "",
+        season: "",
         likeCount: 0,
         likedUser: {}
     }

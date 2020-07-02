@@ -54,9 +54,9 @@ export default class HaikuView extends Vue {
       }
 
       if (this.isUserLiked) {
-          this.interecter.cancelLikeToHaiku(userId, this.haiku.id)
+          this.interecter.cancelLikeToHaiku(userId, this.haiku)
       }else{
-          this.interecter.likeToHaiku(userId, this.haiku.id)
+          this.interecter.likeToHaiku(userId, this.haiku)
       }
   }
 

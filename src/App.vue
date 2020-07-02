@@ -9,7 +9,7 @@
         <template v-slot:button-content>
           <b-icon icon="person-circle"></b-icon>
         </template>
-        <b-dropdown-item >{{auth.currentUser.displayName}}</b-dropdown-item>
+        <b-dropdown-item @click="$router.push('/mypage')">{{auth.currentUser.displayName}}</b-dropdown-item>
         <b-dropdown-item ><b-button @click="signout">SignOut</b-button></b-dropdown-item>
       </b-dropdown>
     </div>

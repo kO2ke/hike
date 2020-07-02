@@ -10,6 +10,7 @@ import { BootstrapVue, IconsPlugin } from 'bootstrap-vue'
 import Home from '../views/Home.vue'
 import Signin from '../views/Signin.vue'
 import Signup from '../views/Signup.vue'
+import Mypage from '../views/Mypage.vue'
 
 
 // Install BootstrapVue
@@ -38,6 +39,12 @@ Vue.use(VueRouter)
     meta: { requiresNotAuth: true }
   },
   {
+    path: '/mypage',
+    name: 'mypage',
+    component: Mypage,
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/about',
     name: 'About',
     // route level code-splitting
@@ -54,19 +61,22 @@ const router = new VueRouter({
 })
 
 router.beforeEach((to, from, next) => {
+  const requiresAuth    = to.matched.some(record => record.meta.requiresAuth)
   const requiresNotAuth = to.matched.some(record => record.meta.requiresNotAuth)
   const isLogin = firebase.auth().currentUser
-  if (requiresNotAuth) {
-    if (isLogin) {
-      next({
-        path: '/',
-      })
-    } else {
-      next()
-    }
-  } else {
-    next()
+  if (requiresAuth && !isLogin) {
+    next({
+      path: '/',
+    })
+    return
   }
+  if (requiresNotAuth && isLogin){
+    next({
+      path: '/',
+    })
+    return
+  }
+  next()
 })
 
 export default router
