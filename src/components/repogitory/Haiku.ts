@@ -7,9 +7,12 @@ export interface Haiku {
     third:        string;
     season:       string;
     createdAt?:    firebase.firestore.FieldValue;
+    id:           string;
+}
+
+export interface HaikuLikeStatus {
     likeCount: number;
     likedUser: {[id: string]: boolean};
-    id:           string;
 }
 
 export const emptyHaiku = () =>{

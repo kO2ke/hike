@@ -19,7 +19,7 @@
 
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
-import {Haiku} from "@/components/repogitory/Haiku"
+import {Haiku, HaikuLikeStatus} from "@/components/repogitory/Haiku"
 import HaikuInterecter from "@/components/repogitory/HaikuInterecter";
 import {Auth} from '@/user/auth'
 import {numbersToKanji} from '@/constant/Constant'
@@ -31,19 +31,21 @@ export default class HaikuView extends Vue {
   @Prop({type: Object as () => Haiku})
   haiku!: Haiku
 
+  private likeStatus: HaikuLikeStatus = {likeCount:0, likedUser:{}}
+
   auth = Auth.getInstance()
 
   interecter = HaikuInterecter.getInstance()
 
   mounted() {
-      this.interecter.watchHaiku(this.haiku.id, (haikuStatus) => {
-          this.haiku.likeCount = haikuStatus.likeCount
-          this.haiku.likedUser = haikuStatus.likedUser
+      this.interecter.watchHaikuLikeStatus(this.haiku.id, (likeStatus: HaikuLikeStatus) => {
+          this.likeStatus.likeCount = likeStatus?.likeCount ?? 0
+          this.likeStatus.likedUser = likeStatus?.likedUser ?? {}
       })
   }
 
   private get displayLikeNum() {
-      return numbersToKanji(this.haiku.likeCount)
+      return numbersToKanji(this.likeStatus.likeCount)
   }
 
   private toggleLike(){
@@ -62,7 +64,7 @@ export default class HaikuView extends Vue {
 
   private get isUserLiked() {
       if (this.auth.currentUser != null){
-          return this.haiku.likedUser[this.auth.currentUser.uid] ?? false
+          return this.likeStatus.likedUser[this.auth.currentUser.uid] ?? false
       }else{
           return false
       }

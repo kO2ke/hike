@@ -1,4 +1,4 @@
-import {Haiku, emptyHaiku} from "./Haiku"
+import {Haiku, emptyHaiku, HaikuLikeStatus} from "./Haiku"
 import moment from 'moment';
 import firebase, { database } from 'firebase'
 import {Auth} from '@/user/auth'
@@ -11,7 +11,7 @@ export interface FetchResult
     nextQuery: Promise<FetchResult> | null;
 }
 
-interface likedHaiku 
+interface LikedHaiku 
 {
     id: string;
     createTime: firebase.firestore.Timestamp;
@@ -24,6 +24,10 @@ export default class HaikuInterecter{
     private static _instance: HaikuInterecter;
 
     private auth = Auth.getInstance()
+
+    private likeStatusCollection = db().collection("haikuLikeStatuses").doc("all").collection("statuses");
+    private usersCollection = db().collection("users");
+    private haikusCollection = db().collection("haikus");
 
     public static getInstance(): HaikuInterecter
     {
@@ -43,7 +47,7 @@ export default class HaikuInterecter{
     }
 
     public fetchHaikuWithLikedBy(userId: string, span: number, startAfter: firebase.firestore.DocumentData | null = null): Promise<FetchResult> {
-        const queryBase = db().collection("users").doc(userId).collection("likedHaiku").orderBy("createTime", "desc")
+        const queryBase = this.usersCollection.doc(userId).collection("likedHaiku").orderBy("createTime", "desc")
         const query = startAfter ? queryBase.startAfter(startAfter).limit(span).get()
                                     : queryBase.limit(span).get()
         //先頭から
@@ -56,7 +60,7 @@ export default class HaikuInterecter{
                     const newHaikus: Haiku[] = []
                     const lastDoc = snapshot.docs[snapshot.docs.length - 1]
                     snapshot.forEach(doc => {
-                        const ref = (doc.data() as likedHaiku).haikuRef
+                        const ref = (doc.data() as LikedHaiku).haikuRef
                         ref.get().then((haikuDoc) => {
                             const haiku = haikuDoc.data() as Haiku
                             newHaikus.push(haiku)
@@ -75,7 +79,7 @@ export default class HaikuInterecter{
     }
 
     public fetchHaiku(span: number, startAfter: firebase.firestore.DocumentData | null = null): Promise<FetchResult> {
-        const queryBase = db().collection("haikus").orderBy("createdAt", "desc")
+        const queryBase = this.haikusCollection.orderBy("createdAt", "desc")
         const query = startAfter ? queryBase.startAfter(startAfter).limit(span).get()
                                     : queryBase.limit(span).get()
         //先頭から
@@ -94,6 +98,7 @@ export default class HaikuInterecter{
                     const nextQuery = snapshot.docs.length < span ? null : this.fetchHaiku(span, lastDoc)
                     resolve({haikus:newHaikus, nextQuery: nextQuery})
                 }).catch((err)=>{
+                    console.log(err)
                     reject(err)
                 })
         })
@@ -101,22 +106,22 @@ export default class HaikuInterecter{
 
     }
 
-    public watchHaiku(id: string, onFetchDoc: (haiku: Haiku) => void) {
-        db().collection("haikus").doc(id).onSnapshot(doc => {
-            let newHaikuStatus: Haiku = emptyHaiku()
-            newHaikuStatus = doc.data() as Haiku
+    public watchHaikuLikeStatus(id: string, onFetchDoc: (newStatus: HaikuLikeStatus) => void) {
+        this.likeStatusCollection.doc(id).onSnapshot(doc => {
+            const newHaikuStatus: HaikuLikeStatus = doc.data() as HaikuLikeStatus
             onFetchDoc(newHaikuStatus)
         })
     }
 
     public likeToHaiku(userId: string, haiku: Haiku){
         const batch = db().batch()
-        const likedHaikuRef = db().collection("haikus").doc(haiku.id)
-        const likedUserRef  = db().collection("users").doc(userId)
+        const likeStatusRef = this.likeStatusCollection.doc(haiku.id)
+        const likedHaikuRef = this.haikusCollection.doc(haiku.id)
+        const likedUserRef  = this.usersCollection.doc(userId)
 
         //俳句のいいね数といいねした人リストを更新
         const likedUserPath = "likedUser."+userId
-        batch.update(likedHaikuRef, {[likedUserPath]: true, likeCount: db.FieldValue.increment(1)})
+        batch.update(likeStatusRef, {[likedUserPath]: true, likeCount: db.FieldValue.increment(1)})
 
         //ユーザーのいいねリストを追加
         batch.set(likedUserRef.collection("likedHaiku").doc(haiku.id), {"id": haiku.id, "season": haiku.season ?? "", "haikuRef": likedHaikuRef, createTime: db.FieldValue.serverTimestamp()})
@@ -126,12 +131,13 @@ export default class HaikuInterecter{
 
     public cancelLikeToHaiku(userId: string, haiku: Haiku){
         const batch = db().batch()
-        const likedHaikuRef = db().collection("haikus").doc(haiku.id)
-        const likedUserRef  = db().collection("users").doc(userId)
+        const likeStatusRef = this.likeStatusCollection.doc(haiku.id)
+        const likedHaikuRef = this.haikusCollection.doc(haiku.id)
+        const likedUserRef  = this.usersCollection.doc(userId)
 
         //俳句のいいね数といいねした人リストを更新
         const likedUserPath = "likedUser."+userId
-        batch.update(likedHaikuRef, {[likedUserPath]: db.FieldValue.delete(), likeCount: db.FieldValue.increment(-1)})
+        batch.update(likeStatusRef, {[likedUserPath]: db.FieldValue.delete(), likeCount: db.FieldValue.increment(-1)})
 
         //ユーザーのいいねリストを削除
         batch.delete(likedUserRef.collection("likedHaiku").doc(haiku.id))
@@ -142,7 +148,7 @@ export default class HaikuInterecter{
 
 
     public realtimeFetchAll(onFetchDoc: (haikus: Haiku[]) => void){
-        db().collection("haikus").onSnapshot(querySnapshot => {
+        this.haikusCollection.onSnapshot(querySnapshot => {
             const newHaikus: Haiku[] = []
             querySnapshot.forEach(doc => {
                 newHaikus.push(doc.data() as Haiku)
@@ -157,7 +163,7 @@ export default class HaikuInterecter{
 
     public postHaiku(haiku: Haiku): Promise<void>{
         haiku.createdAt = db.FieldValue.serverTimestamp()
-        const newHaikuRef = db().collection("haikus").doc();
+        const newHaikuRef = this.haikusCollection.doc();
         haiku.id = newHaikuRef.id
         return newHaikuRef.set(haiku)
     }
