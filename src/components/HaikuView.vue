@@ -45,7 +45,7 @@ export default class HaikuView extends Vue {
   }
 
   private get displayLikeNum() {
-      return numbersToKanji(this.likeStatus.likeCount)
+      return numbersToKanji(this.likeStatus.likeCount as number)
   }
 
   private toggleLike(){

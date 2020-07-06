@@ -1,4 +1,4 @@
-import {Haiku, emptyHaiku, HaikuLikeStatus} from "./Haiku"
+import {Haiku, emptyHaiku, HaikuLikeStatus, LikedHaiku} from "./Haiku"
 import moment from 'moment';
 import firebase, { database } from 'firebase'
 import {Auth} from '@/user/auth'
@@ -9,13 +9,6 @@ export interface FetchResult
 {
     haikus: Haiku[];
     nextQuery: Promise<FetchResult> | null;
-}
-
-interface LikedHaiku 
-{
-    id: string;
-    createTime: firebase.firestore.Timestamp;
-    haikuRef: firebase.firestore.DocumentReference;
 }
 
 //::This is singleton class
@@ -115,30 +108,28 @@ export default class HaikuInterecter{
 
     public likeToHaiku(userId: string, haiku: Haiku){
         const batch = db().batch()
-        const likeStatusRef = this.likeStatusCollection.doc(haiku.id)
         const likedHaikuRef = this.haikusCollection.doc(haiku.id)
         const likedUserRef  = this.usersCollection.doc(userId)
+        const newLikedHaiku: LikedHaiku = {"id": haiku.id, "userId": userId, "season": haiku.season ?? "", "haikuRef": likedHaikuRef, createTime: db.FieldValue.serverTimestamp()}
 
-        //俳句のいいね数といいねした人リストを更新
-        const likedUserPath = "likedUser."+userId
-        batch.update(likeStatusRef, {[likedUserPath]: true, likeCount: db.FieldValue.increment(1)})
+        const status: HaikuLikeStatus = {likedUser: {[userId]: true}, likeCount: db.FieldValue.increment(1), haikuRef: likedHaikuRef}
 
+        //俳句のいいねカウントを更新
+        batch.set(this.likeStatusCollection.doc(haiku.id), status, {merge: true})
         //ユーザーのいいねリストを追加
-        batch.set(likedUserRef.collection("likedHaiku").doc(haiku.id), {"id": haiku.id, "season": haiku.season ?? "", "haikuRef": likedHaikuRef, createTime: db.FieldValue.serverTimestamp()})
+        batch.set(likedUserRef.collection("likedHaiku").doc(haiku.id), newLikedHaiku)
 
         batch.commit()
     }
 
     public cancelLikeToHaiku(userId: string, haiku: Haiku){
         const batch = db().batch()
-        const likeStatusRef = this.likeStatusCollection.doc(haiku.id)
-        const likedHaikuRef = this.haikusCollection.doc(haiku.id)
         const likedUserRef  = this.usersCollection.doc(userId)
 
-        //俳句のいいね数といいねした人リストを更新
-        const likedUserPath = "likedUser."+userId
-        batch.update(likeStatusRef, {[likedUserPath]: db.FieldValue.delete(), likeCount: db.FieldValue.increment(-1)})
+        const status = {likedUser: db.FieldValue.delete(), likeCount: db.FieldValue.increment(-1)}
 
+        //俳句のいいねカウントを更新
+        batch.set(this.likeStatusCollection.doc(haiku.id), status, {merge: true})
         //ユーザーのいいねリストを削除
         batch.delete(likedUserRef.collection("likedHaiku").doc(haiku.id))
 
