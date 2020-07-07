@@ -42,43 +42,64 @@ export const onCreateHaiku =
         return [seasonRef.set(newHaiku), likeStatusRef.set(newLikeStatus)]
     })
 
-export const onCreateLike = 
+export const onToggleLike = 
     db.document("/users/{userId}/likedHaiku/{haikuId}")
     .onWrite( (snapShot, context) =>{
-        const doc  = snapShot.after.data() as LikedHaiku
+        if(snapShot.after.data()&&snapShot.before.data()){
+            //updateは考慮されないs
+            return
+        }
+
+        let doc:LikedHaiku|null=null
+        let operate: Object|null=null
+
+        if(snapShot.after.data()){
+            //追加
+            doc  = snapShot.after.data() as LikedHaiku
+            operate = {likedUser: {[doc.userId]: true}, haikuRef: doc.haikuRef}
+        }
+        if(snapShot.before.data()){
+            //削除
+            doc  = snapShot.before.data() as LikedHaiku
+            operate = {likedUser: {[doc.userId]: admin.firestore.FieldValue.delete()}, haikuRef: doc.haikuRef}
+        }
+
+        if(!doc){return}
+        if(!operate){return}
+
         const createTime = moment(doc.createTime)
         const year  = createTime.year().toString()
         const month = createTime.month().toString()
         const week  = Math.floor((createTime.date() - createTime.day() + 12) / 7).toString()
         const date   = createTime.date().toString()
 
+
         const statuses = "statuses"
-
-        let operate: HaikuLikeStatus | null = null
-        switch (context.eventType) {
-            case "create":
-                operate = {likedUser: {[doc.userId]: true}, likeCount: admin.firestore.FieldValue.increment(1), haikuRef: doc.haikuRef}
-                break
-            case "delete":
-                operate = {likedUser: {[doc.userId]: admin.firestore.FieldValue.delete()}, likeCount: admin.firestore.FieldValue.increment(-1), haikuRef: doc.haikuRef}
-                break
-            default:
-                break
-        }
-        
-        if(!operate){return}
-      
+              
         // Set yearly like count
-        const setYear = likeStatusCollection.doc(year).collection(statuses).doc(doc.id).set(operate, {merge: true})
+        const docYear = likeStatusCollection.doc(year).collection(statuses).doc(doc.id)
+        const setYear = setLikeAndCountLike(docYear, operate)
         // Set monthly like count
-        const setMonth = likeStatusCollection.doc(year).collection("monthes").doc(month).collection(statuses).doc(doc.id).set(operate, {merge: true})
+        const docMonth = likeStatusCollection.doc(year).collection("monthes").doc(month).collection(statuses).doc(doc.id)
+        const setMonth = setLikeAndCountLike(docMonth, operate)
         // Set weekly like count
-        const setWeek = likeStatusCollection.doc(year).collection("monthes").doc(month).collection("weeks").doc(week).collection(statuses).doc(doc.id).set(operate, {merge: true})
+        const docWeek = likeStatusCollection.doc(year).collection("monthes").doc(month).collection("weeks").doc(week).collection(statuses).doc(doc.id)
+        const setWeek = setLikeAndCountLike(docWeek, operate)
         // Set daily like count
-        const setDate = likeStatusCollection.doc(year).collection("monthes").doc(month).collection("weeks").doc(week).collection("dates").doc(date).collection(statuses).doc(doc.id).set(operate, {merge: true})
-
+        const docDate = likeStatusCollection.doc(year).collection("monthes").doc(month).collection("weeks").doc(week).collection("dates").doc(date).collection(statuses).doc(doc.id)
+        const setDate = setLikeAndCountLike(docDate, operate)
         return [setYear
                 ,setMonth
                 ,setWeek
                 ,setDate]
     })
+
+    const setLikeAndCountLike = (doc: admin.firestore.DocumentReference, operate:Object) => {
+        return doc.set(operate, {merge: true})
+        .then(() => {
+            return doc.get()
+        }).then(snapShot => {
+            const status = snapShot.data() as HaikuLikeStatus
+            return doc.set({likeCount: Object.keys(status.likedUser).length??0}, {merge: true})
+        })
+    }

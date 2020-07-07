@@ -19,7 +19,7 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import HaikuInterecter, { FetchResult } from "@/components/repogitory/HaikuInterecter";
+import {HaikuInterecter, FetchResult } from "@/components/repogitory/HaikuInterecter";
 import {Haiku} from "@/components/repogitory/Haiku";
 import HaikuComposeView from "@/components/HaikuComposeView.vue";
 import {ComposeViewDelegate} from "@/components/HaikuComposeView.vue"

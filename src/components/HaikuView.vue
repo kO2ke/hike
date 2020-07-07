@@ -20,7 +20,7 @@
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import {Haiku, HaikuLikeStatus} from "@/components/repogitory/Haiku"
-import HaikuInterecter from "@/components/repogitory/HaikuInterecter";
+import {HaikuInterecter} from "@/components/repogitory/HaikuInterecter";
 import {Auth} from '@/user/auth'
 import {numbersToKanji} from '@/constant/Constant'
 

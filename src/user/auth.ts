@@ -32,6 +32,10 @@ export class Auth{
         else
             throw new Error("コンストラクタの引数が不正な為エラー。");
     }
+
+    public onAuthStateChanged(handler: (user: firebase.User|null) => any){
+        firebase.auth().onAuthStateChanged(handler)
+    }
     
     public signOut() {
         return firebase.auth().signOut()

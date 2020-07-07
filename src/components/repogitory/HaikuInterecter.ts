@@ -1,6 +1,6 @@
-import {Haiku, emptyHaiku, HaikuLikeStatus, LikedHaiku} from "./Haiku"
+import {Haiku, HaikuLikeStatus, LikedHaiku} from "./Haiku"
 import moment from 'moment';
-import firebase, { database } from 'firebase'
+import firebase, {firestore} from 'firebase'
 import {Auth} from '@/user/auth'
 
 const db = firebase.firestore
@@ -8,17 +8,53 @@ const db = firebase.firestore
 export interface FetchResult
 {
     haikus: Haiku[];
+    //ページング処理のため次のクエリを再帰的に返す
     nextQuery: Promise<FetchResult> | null;
 }
 
+const fetchHaikuFromHaikuRefCollection = (baseQuery: firestore.CollectionReference|firestore.Query, limit: number|null = null, startAfter: firestore.DocumentData|null = null): Promise<FetchResult>  => {
+    let nextQuery: Promise<FetchResult>|null = null
+
+    let query = baseQuery
+
+    if(limit){query = query.limit(limit)}
+    if(startAfter){query = query.startAfter(startAfter)}
+     
+    return new Promise((resolve, reject) => {
+        if(limit&&limit<=0){reject(new Error("range is must be positive"))}
+        query.get()
+        .then(snapShot => {
+            if(snapShot.docs.length){
+                const lastDoc = snapShot.docs[snapShot.docs.length - 1]
+                nextQuery = fetchHaikuFromHaikuRefCollection(baseQuery, limit, lastDoc)
+            }
+            return Promise.all(
+                snapShot.docs.map(doc => {
+                    const ref = (doc.data() as {haikuRef: firestore.DocumentReference}).haikuRef
+                    return ref?.get()
+                        .then(haikuDoc=>{
+                            return haikuDoc.data() as Haiku
+                        })
+                })
+            )
+        }).then((haikus) => {
+            resolve({haikus: haikus, nextQuery: nextQuery})
+        }).catch(err=>{
+            console.log(err)
+            reject(err)
+        })
+    })
+}
+
 //::This is singleton class
-export default class HaikuInterecter{
+export class HaikuInterecter{
 
     private static _instance: HaikuInterecter;
 
     private auth = Auth.getInstance()
 
-    private likeStatusCollection = db().collection("haikuLikeStatuses").doc("all").collection("statuses");
+    private likeStatusCollection = db().collection("haikuLikeStatuses")
+    private allLikeStatusCollection = db().collection("haikuLikeStatuses").doc("all").collection("statuses");
     private usersCollection = db().collection("users");
     private haikusCollection = db().collection("haikus");
 
@@ -39,45 +75,18 @@ export default class HaikuInterecter{
             throw new Error("コンストラクタの引数が不正な為エラー。");
     }
 
-    public fetchHaikuWithLikedBy(userId: string, span: number, startAfter: firebase.firestore.DocumentData | null = null): Promise<FetchResult> {
+    public fetchHaikuWithLikedBy(userId: string, limit: number): Promise<FetchResult> {
         const queryBase = this.usersCollection.doc(userId).collection("likedHaiku").orderBy("createTime", "desc")
-        const query = startAfter ? queryBase.startAfter(startAfter).limit(span).get()
-                                    : queryBase.limit(span).get()
-        //先頭から
-        return new Promise((resolve, reject) => {
-            if(span <= 0){
-                reject(new Error("range is must be positive"))
-            }
-            query
-                .then((snapshot) => {
-                    const newHaikus: Haiku[] = []
-                    const lastDoc = snapshot.docs[snapshot.docs.length - 1]
-                    snapshot.forEach(doc => {
-                        const ref = (doc.data() as LikedHaiku).haikuRef
-                        ref.get().then((haikuDoc) => {
-                            const haiku = haikuDoc.data() as Haiku
-                            newHaikus.push(haiku)
-                        }).catch((err)=>{
-                            resolve(err)
-                        })
-                    })
-                    //次がなければnextQueryはnullをかえす
-                    const nextQuery = snapshot.docs.length < span ? null : this.fetchHaikuWithLikedBy(userId, span, lastDoc)
-                    resolve({haikus:newHaikus, nextQuery: nextQuery})
-                }).catch((err)=>{
-                    console.log(err)
-                    reject(err)
-                })
-        })
+        return fetchHaikuFromHaikuRefCollection(queryBase, limit)
     }
 
-    public fetchHaiku(span: number, startAfter: firebase.firestore.DocumentData | null = null): Promise<FetchResult> {
+    public fetchHaiku(limit: number, startAfter: firebase.firestore.DocumentData | null = null): Promise<FetchResult> {
         const queryBase = this.haikusCollection.orderBy("createdAt", "desc")
-        const query = startAfter ? queryBase.startAfter(startAfter).limit(span).get()
-                                    : queryBase.limit(span).get()
+        const query = startAfter ? queryBase.startAfter(startAfter).limit(limit).get()
+                                    : queryBase.limit(limit).get()
         //先頭から
         return new Promise((resolve, reject) => {
-            if(span <= 0){
+            if(limit <= 0){
                 reject(new Error("range is must be positive"))
             }
             query
@@ -88,7 +97,7 @@ export default class HaikuInterecter{
                         newHaikus.push(doc.data() as Haiku)
                     })
                     //次がなければnextQueryはnullをかえす
-                    const nextQuery = snapshot.docs.length < span ? null : this.fetchHaiku(span, lastDoc)
+                    const nextQuery = snapshot.docs.length < limit ? null : this.fetchHaiku(limit, lastDoc)
                     resolve({haikus:newHaikus, nextQuery: nextQuery})
                 }).catch((err)=>{
                     console.log(err)
@@ -100,7 +109,7 @@ export default class HaikuInterecter{
     }
 
     public watchHaikuLikeStatus(id: string, onFetchDoc: (newStatus: HaikuLikeStatus) => void) {
-        this.likeStatusCollection.doc(id).onSnapshot(doc => {
+        this.allLikeStatusCollection.doc(id).onSnapshot(doc => {
             const newHaikuStatus: HaikuLikeStatus = doc.data() as HaikuLikeStatus
             onFetchDoc(newHaikuStatus)
         })
@@ -115,7 +124,7 @@ export default class HaikuInterecter{
         const status: HaikuLikeStatus = {likedUser: {[userId]: true}, likeCount: db.FieldValue.increment(1), haikuRef: likedHaikuRef}
 
         //俳句のいいねカウントを更新
-        batch.set(this.likeStatusCollection.doc(haiku.id), status, {merge: true})
+        batch.set(this.allLikeStatusCollection.doc(haiku.id), status, {merge: true})
         //ユーザーのいいねリストを追加
         batch.set(likedUserRef.collection("likedHaiku").doc(haiku.id), newLikedHaiku)
 
@@ -129,7 +138,7 @@ export default class HaikuInterecter{
         const status = {likedUser: db.FieldValue.delete(), likeCount: db.FieldValue.increment(-1)}
 
         //俳句のいいねカウントを更新
-        batch.set(this.likeStatusCollection.doc(haiku.id), status, {merge: true})
+        batch.set(this.allLikeStatusCollection.doc(haiku.id), status, {merge: true})
         //ユーザーのいいねリストを削除
         batch.delete(likedUserRef.collection("likedHaiku").doc(haiku.id))
 
@@ -148,55 +157,72 @@ export default class HaikuInterecter{
         })
     }
 
-    // public fetchWithSeason(season: string): Promise<Haiku[]> {
-    //     return this.stubFetchWithSeason(season) 
-    // }
-
     public postHaiku(haiku: Haiku): Promise<void>{
         haiku.createdAt = db.FieldValue.serverTimestamp()
         const newHaikuRef = this.haikusCollection.doc();
         haiku.id = newHaikuRef.id
         return newHaikuRef.set(haiku)
     }
+}
 
-    // private stubFetchAll(): Promise<Haiku[]> {
-    //     return new Promise((resolve, reject) => {
-    //         setTimeout(() => {
+export const term = [
+    "year",
+    "month",
+    "week",
+    "date"
+] as const
 
-    //             const isErr = (new Date()).getSeconds() % 3 == 0 
+export type Term = typeof term[number]
 
-    //             if (isErr){
-    //                 reject("ERROR!!")
-    //             }
+export class HaikuRankingInterecter {
+    private static _instance: HaikuRankingInterecter;
 
-    //             resolve(
-    //                 this.stub.map((val)=>{
-    //                     val.composer = val.composer.length == 0 || val.composer.length == null ? "詠み人知らず" : val.composer
-    //                     return val
-    //                 }).sort((a, b)=>{
-    //                     return a.createdAt! > b.createdAt! ? -1 : 1
-    //                 })
-    //             )
-    //         }, 1000);   
-    //     })
-    // }
+    private likeStatusCollection = db().collection("haikuLikeStatuses").doc("all").collection("statuses");
+    private usersCollection = db().collection("users");
+    private haikusCollection = db().collection("haikus");
 
-    // private stubFetchWithSeason(season: string): Promise<Haiku[]> {
-    //     return new Promise((resolve) => {
-    //     setTimeout(() => {
+    public static getInstance(): HaikuRankingInterecter
+    {
+        if (!this._instance)
+            this._instance = new HaikuRankingInterecter(HaikuRankingInterecter.getInstance);
 
-    //             const isErr = (new Date()).getSeconds() % 3 == 0 
+        return this._instance;
+    }
 
-    //             if (isErr){
-    //                 throw "ERROR!!"
-    //             }
+    constructor(caller: Function){
+        if (caller == HaikuRankingInterecter.getInstance)
+            console.log("インスタンスを作成。。");
+        else if (HaikuRankingInterecter._instance)
+            throw new Error("既にインスタンスが存在するためエラー。");
+        else
+            throw new Error("コンストラクタの引数が不正な為エラー。");
+    }
 
-    //             resolve(this.stub.filter(function(val){return val.season == season}).map((val)=>{
-    //                 val.composer = val.composer.length == 0 ? "詠み人知らず" : val.composer
-    //                 return val
-    //             }))
-    //         }, 1000);   
-    //     })
-    // }
+    public fetchLikeRanking(atDate: Date, byTerm: Term): Promise<FetchResult>{
+        const mdate = moment(atDate)
+        const year  = mdate.year().toString()
+        const month = mdate.month().toString()
+        const week  = Math.floor((mdate.date() - mdate.day() + 12) / 7).toString()
+        const date  = mdate.date().toString()
 
+        let coll: firebase.firestore.CollectionReference|null=null
+        switch (byTerm){
+            case "year":
+                coll=this.likeStatusCollection.doc(year).collection("statuses")
+                break
+            case "month":
+                coll=this.likeStatusCollection.doc(year).collection("monthes").doc(month).collection("statuses")
+                break
+            case "week":
+                coll=this.likeStatusCollection.doc(year).collection("monthes").doc(month).collection("weeks").doc(week).collection("statuses")
+                break
+            case "date":
+                coll=this.likeStatusCollection.doc(year).collection("monthes").doc(month).collection("weeks").doc(week).collection("dates").doc(date).collection("statuses")
+                break
+        }
+
+        const query = coll.orderBy("likeCount")
+
+        return fetchHaikuFromHaikuRefCollection(query, 5)
+    }
 }

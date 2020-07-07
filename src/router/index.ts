@@ -11,6 +11,7 @@ import Home from '../views/Home.vue'
 import Signin from '../views/Signin.vue'
 import Signup from '../views/Signup.vue'
 import Mypage from '../views/Mypage.vue'
+import Ranking from '../views/Ranking.vue'
 
 
 // Install BootstrapVue
@@ -43,6 +44,11 @@ Vue.use(VueRouter)
     name: 'mypage',
     component: Mypage,
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/ranking',
+    name: 'Ranking',
+    component: Ranking
   },
   {
     path: '/about',

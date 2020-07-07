@@ -15,7 +15,7 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import HaikuInterecter, { FetchResult } from "@/components/repogitory/HaikuInterecter";
+import {HaikuInterecter, FetchResult } from "@/components/repogitory/HaikuInterecter";
 import {Haiku} from "@/components/repogitory/Haiku";
 import HaikuListView, { HaikuListViewDelegate } from "@/components/HaikuListView.vue"
 import {Auth} from '@/user/auth'
@@ -43,10 +43,14 @@ export default class Mypage extends Vue implements HaikuListViewDelegate{
   }
 
   mounted(){
-      if(!this.auth.currentUser){
-        this.$router.push("/")
-      }
-      this.update()
+      this.isLoading = true
+      this.auth.onAuthStateChanged((user) => {
+        if(!user){
+          this.$router.push("/")
+        } else {
+          this.update()
+        }
+      })
   }
 
   private fetchNext() {
