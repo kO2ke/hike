@@ -1,7 +1,17 @@
 <template>
   <div id="app">
-    <div class="header my-2 text-center">
-      Hike.com
+    <div class="header py-2 text-center border-bottom">
+      <span>Hike.com</span>
+      <b-button v-if="!auth.currentUser" href="/signin"  class="right-menu">
+        <b-icon icon="door-closed" class="rounded-circle"></b-icon>
+      </b-button>
+      <b-dropdown v-if="auth.currentUser" class="right-menu" no-caret>
+        <template v-slot:button-content>
+          <b-icon icon="person-circle"></b-icon>
+        </template>
+        <b-dropdown-item @click="$router.push('/mypage')">{{auth.currentUser.displayName}}</b-dropdown-item>
+        <b-dropdown-item ><b-button @click="signout">SignOut</b-button></b-dropdown-item>
+      </b-dropdown>
     </div>
     <div id="nav">
       <router-link to="/">Home</router-link> |
@@ -11,11 +21,36 @@
   </div>
 </template>
 
+<script>
+
+import firebase from 'firebase'
+import router from '@/router'
+import Component from 'vue-class-component'
+import {Auth} from '@/user/auth'
+
+export default {
+  name: "App",
+
+  data: function () {
+    return {
+      auth: Auth.getInstance()
+    }
+  },
+
+  methods: {
+    signout: function() {
+      console.log(this.auth.currentUser)
+      this.auth.signOut().then(()=>{
+        this.$router.push("/signin")
+      })
+    },
+  }
+}
+</script>
+
 <style>
-@import url("https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css");
 
 #app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
@@ -42,10 +77,15 @@
   top: 0;
   left:0;
   width:100vw;
+  background-color:rgb(255, 255, 255, 0.8);
+  z-index: 100;
 }
 
-#app{
-  font-family: 'Yu Mincho';
+body{
+  font-family:'Yu Mincho','YuMincho'!important;
+  background-image: url("~@/assets/background.jpg");
+  background-color:rgba(255,255,255,0.6);
+  background-blend-mode:lighten;
 }
 
 button{
@@ -54,18 +94,26 @@ button{
 }
 
 .spring{
-    background-color: rgb(255, 242, 245);
+    background-color: rgba(253, 237, 250, 0.7)!important;
 }
 
 .summer{
-    background-color: #f1faff;
+    background-color: rgba(210, 230, 230, 0.7)!important;
 }
 
 .autumn{
-    background-color: rgb(255, 242, 231);
+    background-color: rgba(202, 181, 163, 0.7)!important;
 }
 
 .winter{
-    background-color: rgb(209, 214, 221);
+    background-color: rgba(143, 161, 160, 0.7)!important;
 }
+
+.right-menu{
+    position: absolute;
+    top: 10px;
+    right: 20px; 
+    z-index: 101;
+}
+
 </style>

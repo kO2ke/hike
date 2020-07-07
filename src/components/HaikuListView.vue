@@ -1,64 +1,47 @@
 <template>
-    <div>
-        <button @click="update">update</button>       
-        <h1 v-if="isLoading">Loading....</h1>
-        <div class="container-fluid">
-            <div class="row">
-                <HaikuView class="col-3" v-for="haiku in viewList" v-bind:key="haiku.id" v-bind:haiku="haiku"></HaikuView>
-            </div>
+    <div class="container-fluid">
+        <div class="row justify-content-center">
+            <HaikuView class="col-7 col-sm-4 col-md-3 col-lg-2" v-for="(haiku, index) in viewList" :rank="index + 1" :key="`haiku-${haiku.id}`" :haiku="haiku"></HaikuView>
         </div>
-        <button data-toggle="modal" data-target="#composeModal" @click="compose">ここで一句</button>
-        
-        <HaikuComposeView :delegate="this"></HaikuComposeView>
     </div>
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
-import HaikuInterecter from "@/components/repogitory/HaikuInterecter";
-import {Haiku} from "@/components/repogitory/Haiku";
+import { Component, Vue, Prop } from 'vue-property-decorator';
+import {Haiku} from "@/components/repogitory/Haiku.ts";
 import HaikuView from "@/components/HaikuView.vue";
-import HaikuComposeView from "@/components/HaikuComposeView.vue";
-import {ComposeViewDelegate} from "@/components/HaikuComposeView.vue";
+
+export interface HaikuListViewDelegate {
+    viewList(): Haiku[];
+}
 
 @Component({
     components: {
-        HaikuView,
-        HaikuComposeView
+        HaikuView
     }
 })
 
+export default class HaikuListView extends Vue{
+  @Prop({type: Object as () => HaikuListViewDelegate})
+  delegate?: HaikuListViewDelegate
 
-
-export default class HaikuListView extends Vue implements ComposeViewDelegate{
-
-  viewList: Haiku[] = []
-  interecter: HaikuInterecter= new HaikuInterecter()
-  isLoading = false
-
-  private isCompose = false
-
-  public update(){
-      this.isLoading = true
-      this.interecter.fetchAll((haikuList)=>{
-          this.viewList = haikuList
-          console.log(this.viewList)
-          this.isLoading = false
-      })
-  }
-
-  private compose(){
-      this.isCompose = true;
-  }
-
-  public composeEnd(newHaiku: Haiku): void {
-      console.log(newHaiku)
-      this.isCompose = false
-      return
+  private get viewList(): Haiku[] {
+      return this.delegate?.viewList() ?? []
   }
 }
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
+/* .compose-btn{
+    position: fixed;
+    top: 10px;
+    right: max(50vw - 400px, 20px); 
+    z-index: 101;
+}
+
+.mobile .compose-btn{
+    top:auto;
+    bottom: 10px;
+} */
 </style>
