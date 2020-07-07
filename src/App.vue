@@ -95,19 +95,19 @@ button{
 }
 
 .spring{
-    background-color: rgba(253, 237, 250, 0.7)!important;
+    background-color: rgba(209, 175, 183, 0.2)!important;
 }
 
 .summer{
-    background-color: rgba(210, 230, 230, 0.7)!important;
+    background-color: rgba(208, 233, 233, 0.2)!important;
 }
 
 .autumn{
-    background-color: rgba(202, 181, 163, 0.7)!important;
+    background-color: rgba(175, 135, 100, 0.2)!important;
 }
 
 .winter{
-    background-color: rgba(143, 161, 160, 0.7)!important;
+    background-color: rgba(63, 83, 79, 0.2)!important;
 }
 
 .right-menu{
