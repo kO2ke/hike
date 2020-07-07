@@ -1,5 +1,9 @@
 <template>
     <div class="py-3">
+        <p v-if="haiku.staticData" :class="award">
+            <b-icon :class="award" class="award-icon" icon="award-fill"></b-icon>
+            {{haiku.staticData}} の誉
+        </p>
         <div v-bind:class="haiku.season" class="card shadow">
             <div class="like rounded-circle" :class="[isUserLiked ? 'liked' : '']" @click="toggleLike">誉</div>
             <div class="likeCount">{{displayLikeNum}}</div>
@@ -31,6 +35,9 @@ export default class HaikuView extends Vue {
   @Prop({type: Object as () => Haiku})
   haiku!: Haiku
 
+  @Prop()
+  rank!: number
+
   private likeStatus: HaikuLikeStatus = {likeCount:0, likedUser:{}}
 
   auth = Auth.getInstance()
@@ -42,6 +49,19 @@ export default class HaikuView extends Vue {
           this.likeStatus.likeCount = likeStatus?.likeCount ?? 0
           this.likeStatus.likedUser = likeStatus?.likedUser ?? {}
       })
+  }
+
+  private get award() {
+      switch (this.rank){
+          case 1:
+              return "first h3"
+          case 2:
+              return "second h3"
+          case 3:
+              return "third h3"
+          default:
+              return "none"
+      }
   }
 
   private get displayLikeNum() {
@@ -135,6 +155,22 @@ export default class HaikuView extends Vue {
     -ms-writing-mode: tb-rl;
     writing-mode: vertical-lr;
     font-size: 15px;
+}
+
+.first>.award-icon{
+    color: rgb(184, 161, 36);
+}
+
+.second>.award-icon{
+    color: rgb(95, 107, 114);
+}
+
+.third>.award-icon{
+    color: rgb(105, 71, 55);
+}
+
+.none>.award-icon{
+    display: none;
 }
 
 

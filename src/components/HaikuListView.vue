@@ -1,14 +1,14 @@
 <template>
     <div class="container-fluid">
         <div class="row justify-content-center">
-            <HaikuView class="col-7 col-sm-4 col-md-3 col-lg-2" v-for="haiku in viewList" :key="`haiku-${haiku.id}`" :haiku="haiku"></HaikuView>
+            <HaikuView class="col-7 col-sm-4 col-md-3 col-lg-2" v-for="(haiku, index) in viewList" :rank="index + 1" :key="`haiku-${haiku.id}`" :haiku="haiku"></HaikuView>
         </div>
     </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import {Haiku} from "@/components/repogitory/Haiku";
+import {Haiku} from "@/components/repogitory/Haiku.ts";
 import HaikuView from "@/components/HaikuView.vue";
 
 export interface HaikuListViewDelegate {

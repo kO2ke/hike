@@ -30,10 +30,13 @@ const fetchHaikuFromHaikuRefCollection = (baseQuery: firestore.CollectionReferen
             }
             return Promise.all(
                 snapShot.docs.map(doc => {
-                    const ref = (doc.data() as {haikuRef: firestore.DocumentReference}).haikuRef
+                    const data = doc.data() as {haikuRef: firestore.DocumentReference; likeCount?: number}
+                    const ref = data.haikuRef
                     return ref?.get()
                         .then(haikuDoc=>{
-                            return haikuDoc.data() as Haiku
+                            const haiku = haikuDoc.data() as Haiku
+                            if (data.likeCount){ haiku.staticData = data.likeCount}
+                            return haiku
                         })
                 })
             )
@@ -53,7 +56,6 @@ export class HaikuInterecter{
 
     private auth = Auth.getInstance()
 
-    private likeStatusCollection = db().collection("haikuLikeStatuses")
     private allLikeStatusCollection = db().collection("haikuLikeStatuses").doc("all").collection("statuses");
     private usersCollection = db().collection("users");
     private haikusCollection = db().collection("haikus");
@@ -67,8 +69,9 @@ export class HaikuInterecter{
     }
 
     constructor(caller: Function){
-        if (caller == HaikuInterecter.getInstance)
-            console.log("インスタンスを作成。。");
+        if (caller == HaikuInterecter.getInstance){
+            return
+        }
         else if (HaikuInterecter._instance)
             throw new Error("既にインスタンスが存在するためエラー。");
         else
@@ -177,9 +180,7 @@ export type Term = typeof term[number]
 export class HaikuRankingInterecter {
     private static _instance: HaikuRankingInterecter;
 
-    private likeStatusCollection = db().collection("haikuLikeStatuses").doc("all").collection("statuses");
-    private usersCollection = db().collection("users");
-    private haikusCollection = db().collection("haikus");
+    private likeStatusCollection = db().collection("haikuLikeStatuses");
 
     public static getInstance(): HaikuRankingInterecter
     {
@@ -190,8 +191,9 @@ export class HaikuRankingInterecter {
     }
 
     constructor(caller: Function){
-        if (caller == HaikuRankingInterecter.getInstance)
-            console.log("インスタンスを作成。。");
+        if (caller == HaikuRankingInterecter.getInstance){
+            return
+        }
         else if (HaikuRankingInterecter._instance)
             throw new Error("既にインスタンスが存在するためエラー。");
         else
@@ -221,7 +223,7 @@ export class HaikuRankingInterecter {
                 break
         }
 
-        const query = coll.orderBy("likeCount")
+        const query = coll.orderBy("likeCount", "desc")
 
         return fetchHaikuFromHaikuRefCollection(query, 5)
     }

@@ -84,7 +84,7 @@ export default {
 body{
   font-family:'Yu Mincho','YuMincho'!important;
   background-image: url("~@/assets/background.jpg");
-  background-color:rgba(255,255,255,0.8);
+  background-color:rgba(255,255,255,0.6);
   background-blend-mode:lighten;
 }
 

@@ -1,9 +1,11 @@
 <template>
   <div class="ranking">
-      <h2>Ranking</h2>
+      <h2 class="mb-5">Ranking</h2>
       <div>
-        <b-tabs content-class="mt-3" fill>
-          <b-tab v-for="term in terms" :key="term" :title="rankingName(term)" @click="update(term)" active></b-tab>
+        <b-tabs content-class="mt-3" align="center"
+          active-nav-item-class="font-weight-bold text-success"
+        >
+          <b-tab v-for="term in terms" :key="term" title-link-class="text-secondary" :title="rankingName(term)" @click="update(term)" active></b-tab>
         </b-tabs>
       </div>
       <b-spinner variant="secondary" v-if="isLoading"></b-spinner>
@@ -49,13 +51,13 @@ export default class Ranking extends Vue implements HaikuListViewDelegate{
   private rankingName(term: Term) {
     switch (term) {
       case "year":
-        return "年間TOP6"
+        return "年間TOP5"
       case "month":
-        return "月間TOP6"
+        return "月間TOP5"
       case "week":
-        return "週間TOP6"
+        return "週間TOP5"
       case "date":
-        return "本日のTOP6"
+        return "本日のTOP5"
     }
   }
 

@@ -9,6 +9,7 @@ export interface Haiku {
     season:       string;
     createdAt?:    firebase.firestore.FieldValue;
     id:           string;
+    staticData?: number;
 }
 
 export interface HaikuLikeStatus {
