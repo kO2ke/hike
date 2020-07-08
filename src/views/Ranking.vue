@@ -37,7 +37,6 @@ export default class Ranking extends Vue implements HaikuListViewDelegate{
   private alert = ""
   private queryRange = 12
 
-  private auth = Auth.getInstance()
   private terms = term
 
   viewList(){
@@ -62,9 +61,6 @@ export default class Ranking extends Vue implements HaikuListViewDelegate{
   }
 
   private update(term: Term){
-      if(!this.auth.currentUser){
-        return
-      }
       this.isLoading = true
       this.interecter.fetchLikeRanking(new Date, term)
         .then(result => {
