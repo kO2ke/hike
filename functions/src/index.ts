@@ -39,7 +39,7 @@ export const onCreateHaiku =
         
         const likeStatusRef     = likeStatusCollection.doc("all").collection("statuses").doc(newHaiku.id)
     
-        return [seasonRef.set(newHaiku), likeStatusRef.set(newLikeStatus)]
+        return Promise.all([seasonRef.set(newHaiku), likeStatusRef.set(newLikeStatus)])
     })
 
 export const onToggleLike = 
@@ -88,10 +88,12 @@ export const onToggleLike =
         // Set daily like count
         const docDate = likeStatusCollection.doc(year).collection("monthes").doc(month).collection("weeks").doc(week).collection("dates").doc(date).collection(statuses).doc(doc.id)
         const setDate = setLikeAndCountLike(docDate, operate)
-        return [setYear
+        return Promise.all([
+                setYear
                 ,setMonth
                 ,setWeek
-                ,setDate]
+                ,setDate
+            ])
     })
 
     const setLikeAndCountLike = (doc: admin.firestore.DocumentReference, operate:Object) => {
